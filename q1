@@ -1,0 +1,77 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from scipy.stats import ttest_ind
+import math
+
+force = np.array([10, 20, 30, 40, 50, 60, 70, 80, 90])
+stretch = np.array([19, 57, 94, 134, 173, 216, 256, 297, 343])
+h = force[1] - force[0]
+
+def newton_forward_diff_table(x, y):
+    n = len(y)
+    diff_table = np.zeros((n, n))
+    diff_table[:, 0] = y
+    for j in range(1, n):
+        for i in range(n - j):
+            diff_table[i][j] = diff_table[i + 1][j - 1] - diff_table[i][j - 1]
+    return diff_table
+
+def newton_forward_interpolation(x, x_values, diff_table, h):
+    u = (x - x_values[0]) / h
+    result = diff_table[0][0]
+    u_term = 1
+    for i in range(1, len(x_values)):
+        u_term *= (u - (i - 1))
+        result += (u_term * diff_table[0][i]) / math.factorial(i)
+    return result
+
+diff_table = newton_forward_diff_table(force, stretch)
+interpolated_points = [15, 17, 85]
+interpolated_stretch = [newton_forward_interpolation(x, force, diff_table, h) for x in interpolated_points]
+
+print("Interpolated Stretch Values:")
+for x, y in zip(interpolated_points, interpolated_stretch):
+    print(f"Force = {x}: Stretch ≈ {y:.2f}")
+
+x_plot = np.linspace(10, 90, 500)
+y_plot = [newton_forward_interpolation(xi, force, diff_table, h) for xi in x_plot]
+
+plt.figure(figsize=(8, 6))
+plt.plot(force, stretch, 'bo-', label='Original Data')
+plt.plot(x_plot, y_plot, 'r--', label='Interpolated Polynomial')
+plt.scatter(interpolated_points, interpolated_stretch, color='green', label='Interpolated Values')
+plt.xlabel('Force')
+plt.ylabel('Stretch')
+plt.title('Newton Forward Interpolation')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+predicted_stretch = [newton_forward_interpolation(x, force, diff_table, h) for x in force]
+errors = stretch - predicted_stretch
+
+print("\nErrors at Known Points (Actual - Predicted):")
+for x, err in zip(force, errors):
+    print(f"Force = {x}: Error ≈ {err:.2f}")
+
+plt.figure(figsize=(8, 6))
+plt.plot(force, errors, 'm*-', label='Error (Actual - Predicted)')
+plt.xlabel('Force')
+plt.ylabel('Error')
+plt.title('Prediction Error at Known Points')
+plt.grid(True)
+plt.legend()
+plt.show()
+
+np.random.seed(42)
+spring_constants = np.random.uniform(1, 5, 5)
+simulated_data = [k * force + np.random.normal(0, 5, size=force.shape) for k in spring_constants]
+
+print("\nT-test Results for Simulated Data vs. Original Data:")
+for i, sim in enumerate(simulated_data):
+    t_stat, p_val = ttest_ind(stretch, sim)
+    print(f"Simulation {i + 1} (Spring Constant ≈ {spring_constants[i]:.2f}):")
+    print(f"  t-statistic ≈ {t_stat:.2f}, p-value ≈ {p_val:.3f}")
+
+
