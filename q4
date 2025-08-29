@@ -1,0 +1,30 @@
+def func(x):
+    return np.sin(x)
+
+def trap_rule(a, b, n):
+    h = (b - a) / n
+    x = np.linspace(a, b, n + 1)
+    y = func(x)
+    return (h / 2) * (y[0] + 2 * np.sum(y[1:n]) + y[n])
+
+def simp_rule(a, b, n):
+    if n % 2 != 0:
+        n += 1
+    h = (b - a) / n
+    x = np.linspace(a, b, n + 1)
+    y = func(x)
+    return (h / 3) * (y[0] + y[n] + 4 * np.sum(y[1:n:2]) + 2 * np.sum(y[2:n-1:2]))
+
+a, b = 0, np.pi
+n = 20
+true_val = -np.cos(np.pi) - (-np.cos(0))
+
+t_res = trap_rule(a, b, n)
+s_res = simp_rule(a, b, n)
+
+t_err = abs(true_val - t_res)
+s_err = abs(true_val - s_res)
+
+print(f"Exact value: {true_val:.6f}")
+print(f"Trapezoidal rule (n={n}): {t_res:.6f}, Error: {t_err:.6f}")
+print(f"Simpson's rule (n={n}): {s_res:.6f}, Error: {s_err:.6f}")
