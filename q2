@@ -1,0 +1,84 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+T = np.array([300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000])
+e = np.array([0.024, 0.035, 0.046, 0.058, 0.067, 0.083, 0.097, 0.111, 0.125, 0.140, 0.155, 0.170, 0.186, 0.202, 0.219, 0.235, 0.252, 0.269])
+
+def original_formula(T):
+    return 0.02424 * (T / 303.16) ** 1.27591
+
+def newton_divided_diff(x, y):
+    n = len(y)
+    coef = np.zeros(n)
+    coef[0] = y[0]
+    table = np.zeros((n, n))
+    table[:, 0] = y
++    for j in range(1, n):
+        for i in range(n - j):
+            table[i, j] = (table[i + 1, j - 1] - table[i, j - 1]) / (x[i + j] - x[i])
+        coef[j] = table[0, j]
+    return coef
+
+def newton_eval(x, x_data, coef):
+    result = coef[0]
+    term = 1
+    for i in range(1, len(coef)):
+        term *= (x - x_data[i - 1])
+        result += coef[i] * term
+    return result
+
+newton_coefs = newton_divided_diff(T, e)
+newton_values = [newton_eval(x, T, newton_coefs) for x in [0.5, 3]]
+
+def lagrange_interpolation(x, x_data, y_data):
+    n = len(x_data)
+    result = 0
+    for i in range(n):
+        term = y_data[i]
+        for j in range(n):
+            if j != i:
+                term *= (x - x_data[j]) / (x_data[i] - x_data[j])
+        result += term
+    return result
+
+lagrange_values = [lagrange_interpolation(x, T, e) for x in [0.5, 3]]
+
+print("Newton Divided Difference Interpolation:")
+for x, val in zip([0.5, 3], newton_values):
+    print(f"T = {x}: e ≈ {val:.6f}")
+
+print("\nLagrange Interpolation:")
+for x, val in zip([0.5, 3], lagrange_values):
+    print(f"T = {x}: e ≈ {val:.6f}")
+
+print("\nOriginal Formula Values:")
+for x in [0.5, 3]:
+    val = original_formula(x)
+    print(f"T = {x}: e ≈ {val:.6f}")
+
+x_plot = np.linspace(300, 2000, 500)
+newton_plot = [newton_eval(xi, T, newton_coefs) for xi in x_plot]
+original_plot = [original_formula(xi) for xi in x_plot]
+
+plt.figure(figsize=(10, 6))
+plt.plot(T, e, 'bo', label='Given Data Points')
+plt.plot(x_plot, newton_plot, 'r-', label='Newton Interpolating Polynomial')
+plt.plot(x_plot, original_plot, 'g--', label='Original Formula')
+plt.xlabel('Temperature (K)')
+plt.ylabel('Emittance')
+plt.title('Emittance vs Temperature')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+newton_at_data = [newton_eval(xi, T, newton_coefs) for xi in T]
+errors = e - newton_at_data
+print("\nErrors at Data Points (Actual - Interpolated):")
+for t, err in zip(T, errors):
+    print(f"T = {t}: Error ≈ {err:.6f}")
+
+original_at_data = [original_formula(t) for t in T]
+print("\nOriginal Formula vs. Actual Data:")
+for t, actual, orig in zip(T, e, original_at_data):
+    print(f"T = {t}: Actual e = {actual:.3f}, Formula e ≈ {orig:.3f}, Difference ≈ {actual - orig:.6f}")
+
